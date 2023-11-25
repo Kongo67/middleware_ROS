@@ -269,7 +269,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from mavros_msgs.msg import State
 from mavros_msgs.srv import CommandBool, CommandBoolRequest, SetMode, SetModeRequest
-from pynput import keyboard as kb
+# from pynput import keyboard as kb
 from std_msgs.msg import String
 
 
@@ -363,8 +363,8 @@ if __name__ == "__main__":
 
 
     # Create a listener for keyboard input
-    listener = kb.Listener(on_press=on_press)
-    listener.start()
+    # listener = kb.Listener(on_press=on_press)
+    # listener.start()
 
     # offb_set_mode = SetModeRequest()
     # offb_set_mode.custom_mode = 'OFFBOARD'
@@ -372,22 +372,26 @@ if __name__ == "__main__":
     # arm_cmd.value = True
     last_req = rospy.Time.now()
     
-    # while not rospy.is_shutdown():
-    #     print('Connected')
+    while not rospy.is_shutdown():
+        print('Connected')
+        if current_state.mode != "OFFBOARD" and (rospy.Time.now() - last_req) > rospy.Duration(5.0):
+            if set_mode_client.call(offb_set_mode).mode_sent:
+                rospy.loginfo("OFFBOARD enabled")
+            last_req = rospy.Time.now()
+        else:
+            if not current_state.armed and (rospy.Time.now() - last_req) > rospy.Duration(5.0):
+                if arming_client.call(arm_cmd).success:
+                    rospy.loginfo("Vehicle armed")
+                last_req = rospy.Time.now()
+    
+        pose_hi = PoseStamped()
+        pose_hi.pose.position.x = 0
+        pose_hi.pose.position.y = 0
+        pose_hi.pose.position.z = 1
 
-        # if current_state.mode != "OFFBOARD" and (rospy.Time.now() - last_req) > rospy.Duration(5.0):
-        #     if set_mode_client.call(offb_set_mode).mode_sent:
-        #         rospy.loginfo("OFFBOARD enabled")
-        #     last_req = rospy.Time.now()
-        # else:
-        #     if not current_state.armed and (rospy.Time.now() - last_req) > rospy.Duration(5.0):
-        #         if arming_client.call(arm_cmd).success:
-        #             rospy.loginfo("Vehicle armed")
-        #         last_req = rospy.Time.now()
-        
-        
-        # rate.sleep()
-    rospy.spin()
+        local_pos_pub.publish(pose_hi)
+        rate.sleep()
+    #rospy.spin()
 
 # #!/usr/bin/env python
 # # coding=UTF-8
