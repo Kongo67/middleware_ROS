@@ -269,17 +269,11 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from mavros_msgs.msg import State
 from mavros_msgs.srv import CommandBool, CommandBoolRequest, SetMode, SetModeRequest
-# from pynput import keyboard as kb
+from pynput import keyboard as kb
 from std_msgs.msg import String
 
 
 current_state = State()
-
-def cb(msg):
-    global state 
-    state = msg
-    state.armed = True
-    local_state.publish(state)
 
 def state_cb(msg):
     global current_state
@@ -327,8 +321,6 @@ if __name__ == "__main__":
     state_sub = rospy.Subscriber("/mavros/state", State, callback=state_cb)
     local_pos_pub = rospy.Publisher("/mavros/setpoint_position/local", PoseStamped, queue_size=10)
     local_pos_sub = rospy.Subscriber("/mavros/setpoint_position/local", PoseStamped, callback = position_cb)
-    local_state = rospy.Publisher("/mavros/state", State)
-    local_state_sub = rospy.Subscriber("/mavros/state", State, cb)
 
     rospy.wait_for_service("/mavros/cmd/arming")
     arming_client = rospy.ServiceProxy("mavros/cmd/arming", CommandBool)
@@ -336,8 +328,7 @@ if __name__ == "__main__":
     set_mode_client = rospy.ServiceProxy("mavros/set_mode", SetMode)
     middleware_sub = rospy.Subscriber("/middleware/control", String, on_press)
 
-    # local_state.armed = True
-    # local_state.publish()
+
 
     rate = rospy.Rate(20)
 
@@ -346,44 +337,135 @@ if __name__ == "__main__":
         print('Not Connected')
     print('Connected')
 
+    # arming_client(True)
+    arm_cmd = CommandBoolRequest()
+    arm_cmd.value = True
+    arming_client.call(arm_cmd)
+    set_mode_client(0,"AUTO.TAKEOFF")
+    print ('Taking off.....\r')
+    rospy.sleep(5)
+
     pose = PoseStamped()
     pose.pose.position.x = 0
     pose.pose.position.y = 0
     pose.pose.position.z = 1
 
+    
     for i in range(100):
         if rospy.is_shutdown():
             break
         local_pos_pub.publish(pose)
         rate.sleep()
-
-    
-
-    # Create a listener for keyboard input
-    # listener = kb.Listener(on_press=on_press)
-    # listener.start()
-
+    # set_mode_client(0,"OFFBOARD")
     offb_set_mode = SetModeRequest()
     offb_set_mode.custom_mode = 'OFFBOARD'
-    arm_cmd = CommandBoolRequest()
-    arm_cmd.value = True
+    set_mode_client.call(offb_set_mode)
+
+
+    # Create a listener for keyboard input
+    listener = kb.Listener(on_press=on_press)
+    listener.start()
+
+    # offb_set_mode = SetModeRequest()
+    # offb_set_mode.custom_mode = 'OFFBOARD'
+    # arm_cmd = CommandBoolRequest()
+    # arm_cmd.value = True
     last_req = rospy.Time.now()
+    
+    # while not rospy.is_shutdown():
+    #     print('Connected')
 
-    if arming_client.call(arm_cmd).success:
-        rospy.loginfo("Vehicle armed")
-    last_req = rospy.Time.now()
-
-    while not rospy.is_shutdown():
-        print('Connected')
-        if current_state.mode != "OFFBOARD" and (rospy.Time.now() - last_req) > rospy.Duration(5.0):
-            if set_mode_client.call(offb_set_mode).mode_sent:
-                rospy.loginfo("OFFBOARD enabled")
-            last_req = rospy.Time.now()
-        else:
-            if not current_state.armed and (rospy.Time.now() - last_req) > rospy.Duration(5.0):
-                if arming_client.call(arm_cmd).success:
-                    rospy.loginfo("Vehicle armed")
-                last_req = rospy.Time.now()
-
+        # if current_state.mode != "OFFBOARD" and (rospy.Time.now() - last_req) > rospy.Duration(5.0):
+        #     if set_mode_client.call(offb_set_mode).mode_sent:
+        #         rospy.loginfo("OFFBOARD enabled")
+        #     last_req = rospy.Time.now()
+        # else:
+        #     if not current_state.armed and (rospy.Time.now() - last_req) > rospy.Duration(5.0):
+        #         if arming_client.call(arm_cmd).success:
+        #             rospy.loginfo("Vehicle armed")
+        #         last_req = rospy.Time.now()
         
-        rate.sleep()
+        
+        # rate.sleep()
+    rospy.spin()
+
+# #!/usr/bin/env python
+# # coding=UTF-8
+# import rospy
+# import mavros
+# import mavros.command as mc
+# from mavros_msgs.msg import State
+# from geometry_msgs.msg import PoseStamped, Twist, Quaternion
+# from mavros_msgs.srv import CommandBool
+# from mavros_msgs.srv import SetMode
+# import tf.transformations as t
+# import math
+# from std_msgs.msg import String
+
+# current_state=State()
+# current_pose = PoseStamped()
+# current_vel = Twist()
+
+# def localpose_callback(data):
+#     global current_pose
+#     current_pose = data
+
+# def publish_setvel(event):
+#     global current_pose, setvel_pub, setvel, setvel_forward
+#     q=current_pose.pose.orientation.x, current_pose.pose.orientation.y,current_pose.pose.orientation.z,current_pose.pose.orientation.w
+#     roll, pitch, yaw = t.euler_from_quaternion(q)
+#     setvel.linear.x = setvel_forward * math.cos(yaw)
+#     setvel.linear.y = setvel_forward * math.sin(yaw)
+#     setvel_pub.publish(setvel)
+
+# def main():
+#     global current_pose, setvel, setvel_pub, setvel_forward
+
+#     rospy.init_node("offbrd",anonymous=True)
+#     rate=rospy.Rate(10)
+#     pose_sub=rospy.Subscriber("/mavros/local_position/pose",PoseStamped,localpose_callback)
+#     setvel_pub=rospy.Publisher("/mavros/setpoint_velocity/cmd_vel_unstamped",Twist,queue_size=1)
+#     arming_s=rospy.ServiceProxy("/mavros/cmd/arming",CommandBool)
+#     set_mode=rospy.ServiceProxy("/mavros/set_mode",SetMode)
+#     middleware_sub = rospy.Subscriber("/middleware/control", String, c)
+
+#     setvel=Twist()
+#     setvel_forward = 0
+
+#     arming_s(True)
+#     set_mode(0,"AUTO.TAKEOFF")
+#     print ('Taking off.....\r')
+#     rospy.sleep(5)
+    
+#     # keyboard manipulation
+#     import curses
+#     stdscr = curses.initscr()
+#     curses.noecho()
+#     stdscr.nodelay(1)
+#     stdscr.keypad(1)
+
+#     for i in range (0,10):
+#         setvel_pub.publish(setvel)
+#         rate.sleep()
+#     set_mode(0,"OFFBOARD")
+#     setvel_timer = rospy.Timer(rospy.Duration(0.05), publish_setvel)
+#     while (rospy.is_shutdown()==False):
+#         rate.sleep()
+#         # keyboard  hcommands handling    
+#         c = stdscr.getch()
+#         if c == ord('q'): break  # Exit the while()
+#         elif c == ord('u'): setvel.linear.z += 0.25
+#         elif c == ord('d'): setvel.linear.z -= 0.25
+#         elif c == curses.KEY_LEFT: setvel.angular.z += 0.25
+#         elif c == curses.KEY_RIGHT: setvel.angular.z -= 0.25
+#         elif c == curses.KEY_UP: setvel_forward += 0.25 
+#         elif c == curses.KEY_DOWN: setvel_forward -= 0.25
+#         elif c == ord('s'): setvel_forward=setvel.linear.z=setvel.angular.z=0
+#         if  c!=curses.ERR: 
+#           print (setvel,'\r')
+#     curses.endwin()
+#     set_mode(0,"AUTO.LAND")
+#     print ('Landing.......\r')
+
+# if __name__=="__main__":
+#     main()
