@@ -369,6 +369,10 @@ if __name__ == "__main__":
     arm_cmd.value = True
     last_req = rospy.Time.now()
 
+    if arming_client.call(arm_cmd).success:
+        rospy.loginfo("Vehicle armed")
+    last_req = rospy.Time.now()
+
     while not rospy.is_shutdown():
         print('Connected')
         if current_state.mode != "OFFBOARD" and (rospy.Time.now() - last_req) > rospy.Duration(5.0):
