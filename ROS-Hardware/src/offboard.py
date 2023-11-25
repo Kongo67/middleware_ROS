@@ -269,7 +269,7 @@ import rospy
 from geometry_msgs.msg import PoseStamped
 from mavros_msgs.msg import State
 from mavros_msgs.srv import CommandBool, CommandBoolRequest, SetMode, SetModeRequest
-from pynput import keyboard as kb
+# from pynput import keyboard as kb
 from std_msgs.msg import String
 
 
@@ -355,8 +355,8 @@ if __name__ == "__main__":
     last_req = rospy.Time.now()
 
     # Create a listener for keyboard input
-    listener = kb.Listener(on_press=on_press)
-    listener.start()
+    # listener = kb.Listener(on_press=on_press)
+    # listener.start()
 
     while not rospy.is_shutdown():
         print('Connected')
@@ -369,7 +369,7 @@ if __name__ == "__main__":
                 if arming_client.call(arm_cmd).success:
                     rospy.loginfo("Vehicle armed")
                 last_req = rospy.Time.now()
-            
+
         
         rate.sleep()
         rospy.spin()
