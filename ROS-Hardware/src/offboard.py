@@ -321,6 +321,7 @@ if __name__ == "__main__":
     state_sub = rospy.Subscriber("/mavros/state", State, callback=state_cb)
     local_pos_pub = rospy.Publisher("/mavros/setpoint_position/local", PoseStamped, queue_size=10)
     local_pos_sub = rospy.Subscriber("/mavros/setpoint_position/local", PoseStamped, callback = position_cb)
+    local_state = rospy.Publisher("/mavros/state", State)
 
     rospy.wait_for_service("/mavros/cmd/arming")
     arming_client = rospy.ServiceProxy("mavros/cmd/arming", CommandBool)
@@ -328,7 +329,8 @@ if __name__ == "__main__":
     set_mode_client = rospy.ServiceProxy("mavros/set_mode", SetMode)
     middleware_sub = rospy.Subscriber("/middleware/control", String, on_press)
 
-
+    local_state.armed = True
+    local_state.publish()
 
     rate = rospy.Rate(20)
 
