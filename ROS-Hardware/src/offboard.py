@@ -354,6 +354,12 @@ if __name__ == "__main__":
     # listener = kb.Listener(on_press=on_press)
     # listener.start()
 
+    offb_set_mode = SetModeRequest()
+    offb_set_mode.custom_mode = 'OFFBOARD'
+    arm_cmd = CommandBoolRequest()
+    arm_cmd.value = True
+    last_req = rospy.Time.now()
+
     while not rospy.is_shutdown():
         print('Connected')
         if current_state.mode != "OFFBOARD" and (rospy.Time.now() - last_req) > rospy.Duration(5.0):
@@ -366,10 +372,6 @@ if __name__ == "__main__":
                     rospy.loginfo("Vehicle armed")
                 last_req = rospy.Time.now()
 
-        offb_set_mode = SetModeRequest()
-        offb_set_mode.custom_mode = 'OFFBOARD'
-        arm_cmd = CommandBoolRequest()
-        arm_cmd.value = True
-        last_req = rospy.Time.now()
+        
         rate.sleep()
         rospy.spin()
