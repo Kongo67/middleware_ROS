@@ -275,6 +275,12 @@ from std_msgs.msg import String
 
 current_state = State()
 
+def cb(msg):
+    global state 
+    state = msg
+    state.armed = True
+    local_state.publish(state)
+
 def state_cb(msg):
     global current_state
     current_state = msg
@@ -322,6 +328,7 @@ if __name__ == "__main__":
     local_pos_pub = rospy.Publisher("/mavros/setpoint_position/local", PoseStamped, queue_size=10)
     local_pos_sub = rospy.Subscriber("/mavros/setpoint_position/local", PoseStamped, callback = position_cb)
     local_state = rospy.Publisher("/mavros/state", State)
+    local_state_sub = rospy.Subscriber("/mavros/state", State, cb)
 
     rospy.wait_for_service("/mavros/cmd/arming")
     arming_client = rospy.ServiceProxy("mavros/cmd/arming", CommandBool)
@@ -329,8 +336,8 @@ if __name__ == "__main__":
     set_mode_client = rospy.ServiceProxy("mavros/set_mode", SetMode)
     middleware_sub = rospy.Subscriber("/middleware/control", String, on_press)
 
-    local_state.armed = True
-    local_state.publish()
+    # local_state.armed = True
+    # local_state.publish()
 
     rate = rospy.Rate(20)
 
@@ -376,4 +383,3 @@ if __name__ == "__main__":
 
         
         rate.sleep()
-        rospy.spin()
