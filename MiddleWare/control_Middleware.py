@@ -41,7 +41,7 @@ def actuateData(data):
 # anonymous=True flag means that rospy will choose a unique
 # name for our 'listener' node so that multiple listeners can
 # run simultaneously.
-sio.connect(os.path.expandvars('http://172.17.0.1:8000'))
+sio.connect(os.path.expandvars('http://192.168.43.27:8000'))
 rospy.init_node('listener', anonymous=True)
 pub = rospy.Publisher("/middleware/control", String, queue_size=1)
 # spin() simply keeps python from exiting until this node is stopped

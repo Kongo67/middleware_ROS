@@ -340,7 +340,7 @@ if __name__ == "__main__":
     pose = PoseStamped()
     pose.pose.position.x = 0
     pose.pose.position.y = 0
-    pose.pose.position.z = 12
+    pose.pose.position.z = 1
 
     for i in range(100):
         if rospy.is_shutdown():
@@ -348,11 +348,7 @@ if __name__ == "__main__":
         local_pos_pub.publish(pose)
         rate.sleep()
 
-    offb_set_mode = SetModeRequest()
-    offb_set_mode.custom_mode = 'OFFBOARD'
-    arm_cmd = CommandBoolRequest()
-    arm_cmd.value = True
-    last_req = rospy.Time.now()
+    
 
     # Create a listener for keyboard input
     # listener = kb.Listener(on_press=on_press)
@@ -370,6 +366,10 @@ if __name__ == "__main__":
                     rospy.loginfo("Vehicle armed")
                 last_req = rospy.Time.now()
 
-        
+        offb_set_mode = SetModeRequest()
+        offb_set_mode.custom_mode = 'OFFBOARD'
+        arm_cmd = CommandBoolRequest()
+        arm_cmd.value = True
+        last_req = rospy.Time.now()
         rate.sleep()
         rospy.spin()
