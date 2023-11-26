@@ -262,214 +262,214 @@
         
 #         rate.sleep()
 
-# #!/usr/bin/env python3
+#!/usr/bin/env python3
 
 
-# import rospy
-# from geometry_msgs.msg import PoseStamped
-# from mavros_msgs.msg import State
-# from mavros_msgs.srv import CommandBool, CommandBoolRequest, SetMode, SetModeRequest
-# # from pynput import keyboard as kb
-# from std_msgs.msg import String
-
-
-# current_state = State()
-
-# def state_cb(msg):
-#     global current_state
-#     current_state = msg
-
-# def position_cb(msg):
-#     global current_position
-#     current_position = msg
-
-# def increase_altitude():
-#     global pose
-#     pose.pose.position.z += 1
-#     local_pos_pub.publish(pose)
-
-
-# def decrease_altitude():
-#     global pose
-#     pose.pose.position.z -= 1
-#     local_pos_pub.publish(pose)
-
-# def move_left():
-#     global pose
-#     pose.pose.position.x -= 1
-#     local_pos_pub.publish(pose)
-
-# def move_right():
-#     global pose
-#     pose.pose.position.x += 1
-#     local_pos_pub.publish(pose)
-
-
-# def on_press(key):
-#     print(key)
-#     if key.data == 'w':
-#         increase_altitude()
-#     elif key.data == 's':
-#         decrease_altitude()
-#     elif key.data == 'a':
-#         move_left()
-#     elif key.data == 'd':
-#         move_right()
-
-# if __name__ == "__main__":
-#     rospy.init_node("offb_node_py")
-#     state_sub = rospy.Subscriber("/mavros/state", State, callback=state_cb)
-#     local_pos_pub = rospy.Publisher("/mavros/setpoint_position/local", PoseStamped, queue_size=10)
-#     local_pos_sub = rospy.Subscriber("/mavros/setpoint_position/local", PoseStamped, callback = position_cb)
-
-#     rospy.wait_for_service("/mavros/cmd/arming")
-#     arming_client = rospy.ServiceProxy("mavros/cmd/arming", CommandBool)
-#     rospy.wait_for_service("/mavros/set_mode")
-#     set_mode_client = rospy.ServiceProxy("mavros/set_mode", SetMode)
-#     middleware_sub = rospy.Subscriber("/middleware/control", String, on_press)
-
-
-
-#     rate = rospy.Rate(20)
-
-#     while not rospy.is_shutdown() and not current_state.connected:
-#         rate.sleep()
-#         print('Not Connected')
-#     print('Connected')
-
-#     # arming_client(True)
-#     arm_cmd = CommandBoolRequest()
-#     arm_cmd.value = True
-#     arming_client.call(arm_cmd)
-#     set_mode_client(0,"AUTO.TAKEOFF")
-#     print ('Taking off.....\r')
-#     rospy.sleep(5)
-
-#     pose = PoseStamped()
-#     pose.pose.position.x = 0
-#     pose.pose.position.y = 0
-#     pose.pose.position.z = 1
-
-    
-#     for i in range(100):
-#         if rospy.is_shutdown():
-#             break
-#         local_pos_pub.publish(pose)
-#         rate.sleep()
-#     # set_mode_client(0,"OFFBOARD")
-#     offb_set_mode = SetModeRequest()
-#     offb_set_mode.custom_mode = 'OFFBOARD'
-#     set_mode_client.call(offb_set_mode)
-
-
-#     # Create a listener for keyboard input
-#     # listener = kb.Listener(on_press=on_press)
-#     # listener.start()
-
-#     # offb_set_mode = SetModeRequest()
-#     # offb_set_mode.custom_mode = 'OFFBOARD'
-#     # arm_cmd = CommandBoolRequest()
-#     # arm_cmd.value = True
-#     last_req = rospy.Time.now()
-    
-#     while not rospy.is_shutdown():
-#         print('Connected')
-#         if current_state.mode != "OFFBOARD" and (rospy.Time.now() - last_req) > rospy.Duration(5.0):
-#             if set_mode_client.call(offb_set_mode).mode_sent:
-#                 rospy.loginfo("OFFBOARD enabled")
-#             last_req = rospy.Time.now()
-#         else:
-#             if not current_state.armed and (rospy.Time.now() - last_req) > rospy.Duration(5.0):
-#                 if arming_client.call(arm_cmd).success:
-#                     rospy.loginfo("Vehicle armed")
-#                 last_req = rospy.Time.now()
-    
-#         pose_hi = PoseStamped()
-#         pose_hi.pose.position.x = 0
-#         pose_hi.pose.position.y = 0
-#         pose_hi.pose.position.z = 1
-
-#         local_pos_pub.publish(pose_hi)
-#         rate.sleep()
-    #rospy.spin()
-
-#!/usr/bin/env python
-# coding=UTF-8
 import rospy
-import mavros
-import mavros.command as mc
+from geometry_msgs.msg import PoseStamped
 from mavros_msgs.msg import State
-from geometry_msgs.msg import PoseStamped, Twist, Quaternion
-from mavros_msgs.srv import CommandBool
-from mavros_msgs.srv import SetMode
-import tf.transformations as t
-import math
+from mavros_msgs.srv import CommandBool, CommandBoolRequest, SetMode, SetModeRequest
+# from pynput import keyboard as kb
 from std_msgs.msg import String
 
-current_state=State()
-current_pose = PoseStamped()
-current_vel = Twist()
 
-def localpose_callback(data):
-    global current_pose
-    current_pose = data
+current_state = State()
 
-def publish_setvel(event):
-    global current_pose, setvel_pub, setvel, setvel_forward
-    q=current_pose.pose.orientation.x, current_pose.pose.orientation.y,current_pose.pose.orientation.z,current_pose.pose.orientation.w
-    roll, pitch, yaw = t.euler_from_quaternion(q)
-    setvel.linear.x = setvel_forward * math.cos(yaw)
-    setvel.linear.y = setvel_forward * math.sin(yaw)
-    setvel_pub.publish(setvel)
+def state_cb(msg):
+    global current_state
+    current_state = msg
 
-def main():
-    global current_pose, setvel, setvel_pub, setvel_forward
+def position_cb(msg):
+    global current_position
+    current_position = msg
 
-    rospy.init_node("offbrd",anonymous=True)
-    rate=rospy.Rate(10)
-    pose_sub=rospy.Subscriber("/mavros/local_position/pose",PoseStamped,localpose_callback)
-    setvel_pub=rospy.Publisher("/mavros/setpoint_velocity/cmd_vel_unstamped",Twist,queue_size=1)
-    arming_s=rospy.ServiceProxy("/mavros/cmd/arming",CommandBool)
-    set_mode=rospy.ServiceProxy("/mavros/set_mode",SetMode)
-    middleware_sub = rospy.Subscriber("/middleware/control", String, c)
+def increase_altitude():
+    global pose
+    pose.pose.position.z += 1
+    local_pos_pub.publish(pose)
 
-    setvel=Twist()
-    setvel_forward = 0
 
-    arming_s(True)
-    set_mode(0,"AUTO.TAKEOFF")
+def decrease_altitude():
+    global pose
+    pose.pose.position.z -= 1
+    local_pos_pub.publish(pose)
+
+def move_left():
+    global pose
+    pose.pose.position.x -= 1
+    local_pos_pub.publish(pose)
+
+def move_right():
+    global pose
+    pose.pose.position.x += 1
+    local_pos_pub.publish(pose)
+
+
+def on_press(key):
+    print(key)
+    if key.data == 'w':
+        increase_altitude()
+    elif key.data == 's':
+        decrease_altitude()
+    elif key.data == 'a':
+        move_left()
+    elif key.data == 'd':
+        move_right()
+
+if __name__ == "__main__":
+    rospy.init_node("offb_node_py")
+    state_sub = rospy.Subscriber("/mavros/state", State, callback=state_cb)
+    local_pos_pub = rospy.Publisher("/mavros/setpoint_position/local", PoseStamped, queue_size=10)
+    local_pos_sub = rospy.Subscriber("/mavros/setpoint_position/local", PoseStamped, callback = position_cb)
+
+    rospy.wait_for_service("/mavros/cmd/arming")
+    arming_client = rospy.ServiceProxy("mavros/cmd/arming", CommandBool)
+    rospy.wait_for_service("/mavros/set_mode")
+    set_mode_client = rospy.ServiceProxy("mavros/set_mode", SetMode)
+    middleware_sub = rospy.Subscriber("/middleware/control", String, on_press)
+
+
+
+    rate = rospy.Rate(20)
+
+    while not rospy.is_shutdown() and not current_state.connected:
+        rate.sleep()
+        print('Not Connected')
+    print('Connected')
+
+    # arming_client(True)
+    arm_cmd = CommandBoolRequest()
+    arm_cmd.value = True
+    arming_client.call(arm_cmd)
+    set_mode_client(0,"AUTO.TAKEOFF")
     print ('Taking off.....\r')
     rospy.sleep(5)
+
+    pose = PoseStamped()
+    pose.pose.position.x = 0
+    pose.pose.position.y = 0
+    pose.pose.position.z = 1
+
     
-    # keyboard manipulation
-    import curses
-    stdscr = curses.initscr()
-    curses.noecho()
-    stdscr.nodelay(1)
-    stdscr.keypad(1)
-
-    for i in range (0,10):
-        setvel_pub.publish(setvel)
+    for i in range(100):
+        if rospy.is_shutdown():
+            break
+        local_pos_pub.publish(pose)
         rate.sleep()
-    set_mode(0,"OFFBOARD")
-    setvel_timer = rospy.Timer(rospy.Duration(0.05), publish_setvel)
-    while (rospy.is_shutdown()==False):
-        rate.sleep()
-        # keyboard  hcommands handling    
-        c = stdscr.getch()
-        if c == ord('q'): break  # Exit the while()
-        elif c == ord('u'): setvel.linear.z += 0.25
-        elif c == ord('d'): setvel.linear.z -= 0.25
-        elif c == curses.KEY_LEFT: setvel.angular.z += 0.25
-        elif c == curses.KEY_RIGHT: setvel.angular.z -= 0.25
-        elif c == curses.KEY_UP: setvel_forward += 0.25 
-        elif c == curses.KEY_DOWN: setvel_forward -= 0.25
-        elif c == ord('s'): setvel_forward=setvel.linear.z=setvel.angular.z=0
-        if  c!=curses.ERR: 
-          print (setvel,'\r')
-    curses.endwin()
-    set_mode(0,"AUTO.LAND")
-    print ('Landing.......\r')
+    # set_mode_client(0,"OFFBOARD")
+    offb_set_mode = SetModeRequest()
+    offb_set_mode.custom_mode = 'OFFBOARD'
+    set_mode_client.call(offb_set_mode)
 
-if __name__=="__main__":
-    main()
+
+    # Create a listener for keyboard input
+    # listener = kb.Listener(on_press=on_press)
+    # listener.start()
+
+    # offb_set_mode = SetModeRequest()
+    # offb_set_mode.custom_mode = 'OFFBOARD'
+    # arm_cmd = CommandBoolRequest()
+    # arm_cmd.value = True
+    last_req = rospy.Time.now()
+    
+    while not rospy.is_shutdown():
+        print('Connected')
+        if current_state.mode != "OFFBOARD" and (rospy.Time.now() - last_req) > rospy.Duration(5.0):
+            if set_mode_client.call(offb_set_mode).mode_sent:
+                rospy.loginfo("OFFBOARD enabled")
+            last_req = rospy.Time.now()
+        else:
+            if not current_state.armed and (rospy.Time.now() - last_req) > rospy.Duration(5.0):
+                if arming_client.call(arm_cmd).success:
+                    rospy.loginfo("Vehicle armed")
+                last_req = rospy.Time.now()
+    
+        pose_hi = PoseStamped()
+        pose_hi.pose.position.x = 0
+        pose_hi.pose.position.y = 0
+        pose_hi.pose.position.z = 1
+
+        local_pos_pub.publish(pose_hi)
+        rate.sleep()
+    #rospy.spin()
+
+# #!/usr/bin/env python
+# # coding=UTF-8
+# import rospy
+# import mavros
+# import mavros.command as mc
+# from mavros_msgs.msg import State
+# from geometry_msgs.msg import PoseStamped, Twist, Quaternion
+# from mavros_msgs.srv import CommandBool
+# from mavros_msgs.srv import SetMode
+# import tf.transformations as t
+# import math
+# from std_msgs.msg import String
+
+# current_state=State()
+# current_pose = PoseStamped()
+# current_vel = Twist()
+
+# def localpose_callback(data):
+#     global current_pose
+#     current_pose = data
+
+# def publish_setvel(event):
+#     global current_pose, setvel_pub, setvel, setvel_forward
+#     q=current_pose.pose.orientation.x, current_pose.pose.orientation.y,current_pose.pose.orientation.z,current_pose.pose.orientation.w
+#     roll, pitch, yaw = t.euler_from_quaternion(q)
+#     setvel.linear.x = setvel_forward * math.cos(yaw)
+#     setvel.linear.y = setvel_forward * math.sin(yaw)
+#     setvel_pub.publish(setvel)
+
+# def main():
+#     global current_pose, setvel, setvel_pub, setvel_forward
+
+#     rospy.init_node("offbrd",anonymous=True)
+#     rate=rospy.Rate(10)
+#     pose_sub=rospy.Subscriber("/mavros/local_position/pose",PoseStamped,localpose_callback)
+#     setvel_pub=rospy.Publisher("/mavros/setpoint_velocity/cmd_vel_unstamped",Twist,queue_size=1)
+#     arming_s=rospy.ServiceProxy("/mavros/cmd/arming",CommandBool)
+#     set_mode=rospy.ServiceProxy("/mavros/set_mode",SetMode)
+#     middleware_sub = rospy.Subscriber("/middleware/control", String, c)
+
+#     setvel=Twist()
+#     setvel_forward = 0
+
+#     arming_s(True)
+#     set_mode(0,"AUTO.TAKEOFF")
+#     print ('Taking off.....\r')
+#     rospy.sleep(5)
+    
+#     # keyboard manipulation
+#     import curses
+#     stdscr = curses.initscr()
+#     curses.noecho()
+#     stdscr.nodelay(1)
+#     stdscr.keypad(1)
+
+#     for i in range (0,10):
+#         setvel_pub.publish(setvel)
+#         rate.sleep()
+#     set_mode(0,"OFFBOARD")
+#     setvel_timer = rospy.Timer(rospy.Duration(0.05), publish_setvel)
+#     while (rospy.is_shutdown()==False):
+#         rate.sleep()
+#         # keyboard  hcommands handling    
+#         c = stdscr.getch()
+#         if c == ord('q'): break  # Exit the while()
+#         elif c == ord('u'): setvel.linear.z += 0.25
+#         elif c == ord('d'): setvel.linear.z -= 0.25
+#         elif c == curses.KEY_LEFT: setvel.angular.z += 0.25
+#         elif c == curses.KEY_RIGHT: setvel.angular.z -= 0.25
+#         elif c == curses.KEY_UP: setvel_forward += 0.25 
+#         elif c == curses.KEY_DOWN: setvel_forward -= 0.25
+#         elif c == ord('s'): setvel_forward=setvel.linear.z=setvel.angular.z=0
+#         if  c!=curses.ERR: 
+#           print (setvel,'\r')
+#     curses.endwin()
+#     set_mode(0,"AUTO.LAND")
+#     print ('Landing.......\r')
+
+# if __name__=="__main__":
+#     main()
